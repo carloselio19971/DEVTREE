@@ -1,15 +1,35 @@
 import { Link } from "react-router-dom"
 import {useForm} from 'react-hook-form'
-import { ErrorMessage } from "../components/errorMessage";
+import type { RegisterFrom } from "../types"
+import axios , {isAxiosError} from 'axios'
+import { ErrorMessage } from "../components/ErrorMessage"
+
+
+const initialValues  = {
+    name:'',
+    email:'',
+    password:'',
+    handle:'',
+    password_confirmation:''
+}
+
 
 
 export const RegisterView = () => {
+    const {register, watch, handleSubmit, reset, formState:{errors}}=useForm<RegisterFrom>({defaultValues:initialValues})
 
-    const {register, watch, handleSubmit, formState:{errors}}=useForm()
-    console.log(errors);
+    const password= watch('password');
 
-    const handleRegister = () =>{
-      console.log("Desde handle register");
+    const handleRegister =  async (formData:RegisterFrom) =>{
+          try {
+                const {data}  = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`,formData)
+                console.log(data)
+                reset();
+          } catch (error) {
+                if(isAxiosError(error) && error.response){
+                  console.log(error.response?.data.error)
+                }
+          }
     }
 
   return (
@@ -57,7 +77,11 @@ export const RegisterView = () => {
                   type="text"
                   placeholder="Nombre de usuario: sin espacios"
                   className="bg-slate-100 border-none p-3 rounded-lg placeholder-slate-400"
+                  {...register('handle',{
+                    required: 'El Handle es Obligatorio'
+                  })}
               />
+                {errors.handle && <ErrorMessage>{errors.handle.message}</ErrorMessage>}
             </div>
             <div className="grid grid-cols-1 space-y-3">
               <label htmlFor="password" className="text-2xl text-slate-500">Password</label>
@@ -74,18 +98,25 @@ export const RegisterView = () => {
                     }
                   })}
               />
+               {errors.password && <ErrorMessage>{errors.password.message}</ErrorMessage>}
             </div>
 
             <div className="grid grid-cols-1 space-y-3">
               <label htmlFor="password_confirmation" className="text-2xl text-slate-500">Repetir Password</label>
               <input
-                  id="password"
+                  id="password_confirmation"
                   type="password"
                   placeholder="Repetir Password"
                   className="bg-slate-100 border-none p-3 rounded-lg placeholder-slate-400"
                   {...register('password_confirmation',{
-                    required: 'La contraseña es Obligatoria',})}
+                    required: 'Repetir Passwor es Obligatorio',
+                    validate: (value) => value === password || 'Los password no son iguales'
+                  
+                  })}
+                  
               />
+                  {errors.password_confirmation && <ErrorMessage>{errors.password_confirmation.message}</ErrorMessage>}
+                  
             </div>
 
           <input
