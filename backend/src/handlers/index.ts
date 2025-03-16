@@ -3,6 +3,7 @@ import  type { Request, Response } from "express";
 import slug from 'slug';
 import User from "../models/User";
 import { checkPassword, hashPassword } from "../utils/auth";
+import { generateJTW } from '../utils/jwt';
 
 export const createAccount = async (req:Request,res:Response) : Promise<void> =>{
 
@@ -63,7 +64,9 @@ export const login = async (req:Request, res:Response): Promise<void> =>{
         return;
     }
 
-    res.status(200).json({ message: "Login exitoso" });
+    const token=generateJTW({id:user._id});
+
+    res.send(token);
     return;
     
 }	
