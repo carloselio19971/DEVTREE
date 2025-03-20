@@ -1,6 +1,9 @@
-import { validationResult } from 'express-validator';
-import  type { Request, Response } from "express";
+import { body } from 'express-validator';
+
+import { Result, validationResult } from 'express-validator';
+import { json, type Request, type Response } from "express";
 import slug from 'slug';
+
 import User from "../models/User";
 import { checkPassword, hashPassword } from "../utils/auth";
 import { generateJTW } from '../utils/jwt';
@@ -70,3 +73,34 @@ export const login = async (req:Request, res:Response): Promise<void> =>{
     return;
     
 }	
+
+export const getUser = async ( req:Request, res:Response): Promise<void> => {
+        
+        res.json(req.user);
+}
+
+
+export const updateProfile = async(req:Request, res:Response):Promise<void> =>{
+    try {
+        const {description} = req.body
+        const handle=slug(req.body.handle,'');
+        const handleExist=await User.findOne({handle});
+    
+        if(handleExist &&  handleExist.email !==req.user.email){
+            const error=new Error("Nombre de Usuario No Disponible");
+            res.status(409).json({error:error.message})
+            return;
+        }
+        //Actualizar el Usuario
+        req.user.description=description
+        req.user.handle=handle
+
+        await req.user.save();
+        res.send('Perfil Actualizado Corectamente');
+
+    } catch (e) {
+        const error= new Error('Hubo un error');
+         res.status(500).json({error:error.message});
+         return
+    }
+}
