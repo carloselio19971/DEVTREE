@@ -1,12 +1,14 @@
-import { body } from 'express-validator';
-
-import { Result, validationResult } from 'express-validator';
-import { json, type Request, type Response } from "express";
+import {  validationResult } from 'express-validator';
+import {  type Request, type Response } from "express";
 import slug from 'slug';
+import {formidable} from 'formidable';
+import {v4 as uuid} from 'uuid';
+import cloudinary from '../config/cloudinary';
 
 import User from "../models/User";
 import { checkPassword, hashPassword } from "../utils/auth";
 import { generateJTW } from '../utils/jwt';
+import { request } from 'axios';
 
 export const createAccount = async (req:Request,res:Response) : Promise<void> =>{
 
@@ -82,7 +84,7 @@ export const getUser = async ( req:Request, res:Response): Promise<void> => {
 
 export const updateProfile = async(req:Request, res:Response):Promise<void> =>{
     try {
-        const {description} = req.body
+        const {description, links } = req.body
         const handle=slug(req.body.handle,'');
         const handleExist=await User.findOne({handle});
     
@@ -94,6 +96,7 @@ export const updateProfile = async(req:Request, res:Response):Promise<void> =>{
         //Actualizar el Usuario
         req.user.description=description
         req.user.handle=handle
+        req.user.links=links
 
         await req.user.save();
         res.send('Perfil Actualizado Corectamente');
@@ -103,4 +106,38 @@ export const updateProfile = async(req:Request, res:Response):Promise<void> =>{
          res.status(500).json({error:error.message});
          return
     }
+}
+
+export const updateImage = async(req:Request, res:Response):Promise<void> =>{
+
+    const form = formidable({multiples:false})
+   
+    try {
+        form.parse(req, (error, fields, files)=>{
+           
+            cloudinary.uploader.upload(files.file[0].filepath,{
+                public_id:uuid()
+            },async function(error, result) {
+              if(error){
+                const error= new Error('Hubo un error al subir la imagen');
+                res.status(500).json({error:error.message});
+                return
+              }
+              if(result){
+                    req.user.image= result.secure_url;
+                    await req.user.save();
+                    
+                    return res.json({image:result.secure_url});
+              }
+               
+                    
+            })
+        })
+        
+    } catch (e) {
+        const error= new Error('Hubo un error');
+        res.status(500).json({error:error.message});
+        return
+    }
+    
 }

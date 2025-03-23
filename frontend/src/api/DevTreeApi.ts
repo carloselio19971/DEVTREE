@@ -1,6 +1,6 @@
 import { isAxiosError } from "axios";
 import API from "../config/axios";
-import { ProfileForm, User } from "../types";
+import {User } from "../types";
 
 
 
@@ -17,7 +17,7 @@ export async function getUser(){
 }
 
 
-export async function updateProfile(formData: ProfileForm){
+export async function updateProfile(formData: User){
   try {
       const {data}= await API.patch<string>('/user', formData)
       return data;
@@ -27,4 +27,16 @@ export async function updateProfile(formData: ProfileForm){
 
       }
     }
+}
+
+export async function updloadImage(file: File) {
+      let formData=new FormData();
+      formData.append('file', file)
+  try {
+     const {data: {image}}:{data:{image:string}} = await API.post('/user/image', formData)
+     return image;
+    
+  } catch (error) {
+    
+  }
 }
